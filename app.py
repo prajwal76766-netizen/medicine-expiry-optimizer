@@ -289,4 +289,56 @@ elif page == "Payments & delivery":
         c2.metric("Transport fee", money(transport))
         c3.metric("Total estimate", money(total))
         st.write(f"**From:** {r['Matched Hospital'] or 'Not assigned'}  →  **To:** {r['Requesting Hospital']}")
-        st.write(f"**Medicine:** {r['
+        st.write(f"**Medicine:** {r['Medicine']}  ·  **Quantity proposed:** {qty}  ·  **Urgency:** {r['Urgency']}")
+        st.warning("This is a payment-status demo only. It does not collect card/bank details or move real money. Real payments require an approved payment provider, secure backend, invoices and legal/accounting review.")
+        new_status = st.selectbox("Update transfer stage", ["Awaiting donor approval","Awaiting payment","Payment confirmed","In transit","Delivered","Rejected"], index=["Awaiting donor approval","Awaiting payment","Payment confirmed","In transit","Delivered","Rejected"].index(r["Status"]) if r["Status"] in ["Awaiting donor approval","Awaiting payment","Payment confirmed","In transit","Delivered","Rejected"] else 0)
+        if st.button("Save transfer status", type="primary"):
+            st.session_state.requests.loc[idx, "Status"] = new_status
+            if new_status == "Awaiting donor approval":
+                st.session_state.requests.loc[idx, "Payment Status"] = "Not started"
+                st.session_state.requests.loc[idx, "Delivery Status"] = "Awaiting donor approval"
+            elif new_status == "Awaiting payment":
+                st.session_state.requests.loc[idx, "Payment Status"] = "Pending"
+                st.session_state.requests.loc[idx, "Delivery Status"] = "Awaiting payment"
+            elif new_status == "Payment confirmed":
+                st.session_state.requests.loc[idx, "Payment Status"] = "Marked paid (demo)"
+                st.session_state.requests.loc[idx, "Delivery Status"] = "Ready for dispatch"
+            elif new_status == "In transit":
+                st.session_state.requests.loc[idx, "Payment Status"] = "Marked paid (demo)"
+                st.session_state.requests.loc[idx, "Delivery Status"] = "In transit"
+            elif new_status == "Delivered":
+                st.session_state.requests.loc[idx, "Payment Status"] = "Marked paid (demo)"
+                st.session_state.requests.loc[idx, "Delivery Status"] = "Delivered — confirmation required"
+            else:
+                st.session_state.requests.loc[idx, "Delivery Status"] = "Proposal rejected"
+            st.success("Transfer status updated.")
+            st.rerun()
+        st.markdown("#### Transfer history")
+        st.dataframe(normalize_requests(st.session_state.requests)[["Request ID","Requesting Hospital","Medicine","Urgency","Matched Hospital","Status","Payment Status","Delivery Status"]], use_container_width=True, hide_index=True)
+
+elif page == "Data & exports":
+    st.subheader("Data & exports")
+    st.write("Download current demo records or upload a hospital stock CSV.")
+    upload = st.file_uploader("Import stock CSV", type=["csv"])
+    if upload is not None:
+        try:
+            st.session_state.stock = normalize_stock(pd.read_csv(upload))
+            st.success("Stock CSV imported.")
+            st.rerun()
+        except Exception as exc:
+            st.error(f"Could not import CSV: {exc}")
+    c1,c2 = st.columns(2)
+    with c1:
+        st.markdown("#### Hospital stock")
+        st.download_button("Download stock CSV", normalize_stock(st.session_state.stock).to_csv(index=False).encode("utf-8"), "hospital_stock.csv", "text/csv", use_container_width=True)
+        st.dataframe(normalize_stock(st.session_state.stock), use_container_width=True, hide_index=True)
+    with c2:
+        st.markdown("#### Requests / transfers")
+        st.download_button("Download requests CSV", normalize_requests(st.session_state.requests).to_csv(index=False).encode("utf-8"), "medicine_requests_transfers.csv", "text/csv", use_container_width=True)
+        st.dataframe(normalize_requests(st.session_state.requests), use_container_width=True, hide_index=True)
+    st.markdown("#### Suggested CSV columns")
+    st.code("Hospital, Medicine, Batch ID, Stock, Minimum Stock, Expiry Date, Storage, Unit, Unit Price (₹), Location")
+    st.caption("Do not upload patient records or other personally identifiable health information into this prototype.")
+
+st.divider()
+st.caption("MedicineLink hackathon prototype • Sample data only • Validate medicine transfer eligibility, cold-chain handling, authorization, pricing and local regulations before any real-world transfer.")
