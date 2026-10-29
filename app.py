@@ -371,12 +371,13 @@ if st.button("Test QpiAI Connection"):
         try:
             response = http_requests.post(
             "https://opt-server.qpiai.tech/api/problems/create",
-            headers={
-                  "Authorization": f"Bearer {token}",
-                  "Content-Type": "application/json"
-    },
-    json={},
-    timeout=15
+                headers={
+                    "X-Secret-Token": token,
+                    "Content-Type": "application/json"
+             },
+             json={},
+             timeout=15
+)
 )
 
             if response.status_code == 200:
