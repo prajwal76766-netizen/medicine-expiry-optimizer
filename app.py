@@ -371,14 +371,24 @@ if st.button("Test QpiAI Connection"):
         try:
             response = http_requests.post(
             "https://opt-server.qpiai.tech/api/problems/create",
-                headers={
-                    "X-Secret-Token": token,
-                    "Content-Type": "application/json"
+            headers={
+               "X-Secret-Token": token,
+               "Content-Type": "application/json"
+            },
+            json={
+              "name": "MedicineLink Connection Test",
+              "method": "QUBO",
+              "num_variables": 2,
+              "qubo_dict": {
+               "0,0": -1.0,
+               "1,1": -1.0,
+                "0,1": 2.0
              },
-             json={},
-             timeout=15
-
+             "max_evaluations": 100
+    },
+    timeout=15
 )
+
 
             if response.status_code == 200:
                 st.success("QpiAI API responded successfully!")
