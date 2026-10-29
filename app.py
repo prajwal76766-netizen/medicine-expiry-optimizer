@@ -193,7 +193,7 @@ if page == "Network dashboard":
         else:
             st.dataframe(low[["Hospital","Medicine","Stock","Minimum Stock","Stock Status"]], use_container_width=True, hide_index=True)
     st.info("Core rule: only stock above the donor hospital's minimum reserve is considered transferable. Expiry and storage compatibility are checked before a match is suggested.")
-  elif page == "Hospital stock":
+elif page == "Hospital stock":
        st.subheader("Hospital stock registry")
        st.write(
         "View and edit imported hospital inventory. "
