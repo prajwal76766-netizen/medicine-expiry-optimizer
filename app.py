@@ -6,11 +6,13 @@ import requests
 import requests as http_requests
 
 def get_qpiai_headers():
-    token = st.secrets.get("QPIAI_OPT_TOKEN")
+    token = str(st.secrets.get("QPIAI_OPT_TOKEN", "")).strip()
+
+    if token.lower().startswith("bearer "):
+        token = token[7:].strip()
 
     if not token:
         return None
-
     return {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
