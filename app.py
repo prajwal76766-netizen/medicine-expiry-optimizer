@@ -273,7 +273,7 @@ elif page == "Match & transfer":
             "eligible donor matches the request's hospital, storage, "
             "expiry and minimum-stock requirements."
         )
-        else:
+         else:
             st.markdown("#### Compatible donor hospitals")
             st.dataframe(matches[["Hospital","Batch ID","Stock","Minimum Stock","Surplus","Suggested Qty","Expiry Date","Days to Expiry","Storage","Location","Unit Price (₹)","Estimated Medicine Cost (₹)"]], use_container_width=True, hide_index=True)
             donor_options = matches["Hospital"].tolist()
