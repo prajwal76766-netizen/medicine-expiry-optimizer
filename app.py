@@ -377,7 +377,7 @@ if st.button("Test QpiAI Connection"):
              },
              json={},
              timeout=15
-)
+
 )
 
             if response.status_code == 200:
