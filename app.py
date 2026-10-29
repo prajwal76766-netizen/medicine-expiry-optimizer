@@ -367,12 +367,16 @@ if st.button("Test QpiAI Connection"):
         st.error("QpiAI token is missing from Streamlit Secrets.")
     else:
         try:
-            response = http_requests.get(
-                "https://opt-server.qpiai.tech/api/auth",
-                headers={
-                    "Authorization": f"Bearer {token}"
-                },
-                timeout=15
+            response = http_requests.post(
+            "https://opt-server.qpiai.tech/api/problems/create",
+            headers={
+                "Authorization": f"Bearer
+                {token}",
+                  "Content-Type": "application/json"
+    },
+    json={},
+    timeout=15
+)    
             )
 
             if response.status_code == 200:
