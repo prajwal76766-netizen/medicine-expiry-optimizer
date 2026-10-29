@@ -257,15 +257,11 @@ elif page == "Match & transfer":
              medicine_name
              ).any()
 
-        if not medicine_exists:
-          st.error(
-             f"Medicine '{row['Medicine']}' is currently not listed in "
-             "any hospital's stock. No donor is available in the registered network."
-          )
-          st.info(
-             "You can keep this request open and check again when a hospital "
-             "adds the medicine to its inventory."
-          )
+             if not medicine_exists:
+                 st.error("this medicine  is not listed in any hopitals stock.")
+             else:
+                  st.warning("no eligible surplus is currently available.")
+           
         else:
                     matches = find_matches(row, st.session_state.stock)
 
