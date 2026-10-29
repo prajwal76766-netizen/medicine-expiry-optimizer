@@ -360,60 +360,214 @@ st.divider()
 st.caption("MedicineLink hackathon prototype • Sample data only • Validate medicine transfer eligibility, cold-chain handling, authorization, pricing and local regulations before any real-world transfer.")
 
 # Temporary QpiAI connection test
-st.subheader("QpiAI API Connection")
 
-if st.button("Test QpiAI Connection"):
-    token = st.secrets.get("QPIAI_OPT_TOKEN", "")
+# MedicineLink — QpiAI medicine-allocation QUBO
+# Replace the old "Temporary QpiAI connection test" section with this block.
 
-    if not token:
-        st.error("QpiAI token is missing from Streamlit Secrets.")
-    else:
-        try:
-            response = http_requests.post(
-            "https://opt-server.qpiai.tech/api/problems/create",
-            headers={
-               "X-Secret-Token": token,
-               "Content-Type": "application/json"
-            },
-            json={
-              "name": "MedicineLink Connection Test",
-              "method": "QUBO",
-              "num_variables": 2,
-              "qubo_dict": {
-               "0,0": -1.0,
-               "1,1": -1.0,
-                "0,1": 2.0
-             },
-             "max_evaluations": 100
-    },
-    timeout=15
+QPIAI_BASE_URL = "https://opt-server.qpiai.tech/api"
+
+
+def build_medicine_allocation_qubo(stock_df, requests_df):
+    """Build a binary QUBO choosing compatible request-to-batch transfers."""
+    from itertools import combinations
+
+    today = date.today()
+    stock_data = normalize_stock(stock_df)
+    request_data = normalize_requests(requests_df)
+
+    candidates = []
+
+    priority_reward = {
+        "Emergency": 4000,
+        "Urgent": 3000,
+        "Moderate": 2000,
+        "Not urgent": 1000,
+    }
+
+    active_requests = request_data[
+        request_data["Status"] == "Open"
+    ]
+
+    for _, req in active_requests.iterrows():
+        for _, batch in stock_data.iterrows():
+            surplus = surplus_for(batch)
+            expiry = batch["Expiry Date"]
+
+            if pd.isna(expiry) or expiry < today:
+                continue
+
+            if batch["Hospital"] == req["Requesting Hospital"]:
+                continue
+
+            if str(batch["Medicine"]).strip().casefold() != str(
+                req["Medicine"]
+            ).strip().casefold():
+                continue
+
+            if str(batch["Storage"]).strip().casefold() != str(
+                req["Storage Required"]
+            ).strip().casefold():
+                continue
+
+            if surplus <= 0:
+                continue
+
+            qty = min(int(req["Quantity Needed"]), surplus)
+            if qty <= 0:
+                continue
+
+            unit_price = float(batch["Unit Price (₹)"])
+            medicine_cost = qty * unit_price
+
+            days_left = (expiry - today).days
+            urgency = priority_reward.get(req["Urgency"], 1000)
+
+            # Larger quantities and urgent requests receive greater reward.
+            # Cost is a small penalty relative to fulfillment priority.
+            reward = (
+                urgency
+                + min(qty, 10000) * 2
+                + max(0, 180 - days_left) * 0.5
+                - medicine_cost * 0.01
+            )
+
+            candidates.append({
+                "request_id": req["Request ID"],
+                "requesting_hospital": req["Requesting Hospital"],
+                "donor": batch["Hospital"],
+                "batch_id": batch["Batch ID"],
+                "medicine": req["Medicine"],
+                "quantity": qty,
+                "unit_price": unit_price,
+                "medicine_cost": medicine_cost,
+                "expiry": str(expiry),
+                "reward": float(reward),
+            })
+
+    if not candidates:
+        return [], {}
+
+    # Binary variable x_i = 1 means candidate i is selected.
+    # Minimize QUBO energy: negative reward for selecting a candidate.
+    qubo = {}
+    for i, candidate in enumerate(candidates):
+        qubo[f"{i},{i}"] = -candidate["reward"]
+
+    # Conservative conflict rule: one selected transfer per request
+    # and one selected transfer per donor batch.
+    # This prevents duplicate requests and batch over-allocation.
+    max_reward = sum(max(0, c["reward"]) for c in candidates)
+    penalty = max(100000.0, max_reward + 1.0)
+
+    for (i, first), (j, second) in combinations(
+        enumerate(candidates), 2
+    ):
+        same_request = first["request_id"] == second["request_id"]
+        same_batch = (
+            first["donor"] == second["donor"]
+            and first["batch_id"] == second["batch_id"]
+        )
+
+        if same_request or same_batch:
+            qubo[f"{i},{j}"] = penalty
+
+    return candidates, qubo
+
+
+st.subheader("QpiAI medicine-allocation optimizer")
+st.write(
+    "Build a QUBO from current inventory and open requests, "
+    "then submit the optimization problem to QpiAI."
 )
 
+st.warning(
+    "This step creates the QpiAI problem only. The solve-job endpoint "
+    "must be configured before the app can retrieve a solution."
+)
 
-            if response.status_code == 200:
-                st.success("QpiAI API responded successfully!")
-            elif response.status_code == 401:
-                st.error("QpiAI rejected the token. Check its validity.")
-            elif response.status_code == 403:
-                st.warning("Authenticated, but access is forbidden.")
-            else:
-                st.warning(f"QpiAI returned HTTP {response.status_code}")
-                st.write("Response URL:", response.url)
-                st.write("Server response:")
-                st.code(response.text[:1000])
-
-        except http_requests.exceptions.RequestException:
-            st.error("Could not complete the QpiAI API request.")
-st.subheader("Token diagnostic")
-
-try:
+if st.button("Build and submit allocation model to QpiAI", type="primary"):
     token = str(st.secrets.get("QPIAI_OPT_TOKEN", "")).strip()
 
-    st.write("Secret found:", bool(token))
-    st.write("Token length:", len(token))
-    st.write(
-        "Contains Bearer prefix:",
-        token.lower().startswith("bearer ")
-    )
-except Exception as e:
-    st.error(f"Could not read Streamlit Secrets: {type(e).__name__}")
+    if token.lower().startswith("bearer "):
+        token = token[7:].strip()
+
+    if not token:
+        st.error("QPIAI_OPT_TOKEN is missing from Streamlit Secrets.")
+    else:
+        try:
+            candidates, qubo = build_medicine_allocation_qubo(
+                st.session_state.stock,
+                st.session_state.requests,
+            )
+
+            if not candidates:
+                st.info(
+                    "No eligible transfers found. Check open requests, "
+                    "medicine names, storage types, expiry and donor surplus."
+                )
+            else:
+                payload = {
+                    "name": "MedicineLink Allocation",
+                    "method": "QUBO",
+                    "num_variables": len(candidates),
+                    "qubo_dict": qubo,
+                    "max_evaluations": 1000,
+                }
+
+                response = requests.post(
+                    f"{QPIAI_BASE_URL}/problems/create",
+                    headers={
+                        "X-Secret-Token": token,
+                        "Content-Type": "application/json",
+                    },
+                    json=payload,
+                    timeout=30,
+                )
+
+                if response.status_code in (200, 201, 202):
+                    result = response.json()
+
+                    st.success(
+                        "QpiAI accepted the allocation problem for creation."
+                    )
+                    st.metric("Candidate transfers", len(candidates))
+                    st.metric("QUBO variables", len(qubo))
+
+                    st.write("Eligible transfer candidates")
+                    st.dataframe(
+                        pd.DataFrame(candidates)[[
+                            "request_id",
+                            "requesting_hospital",
+                            "donor",
+                            "batch_id",
+                            "medicine",
+                            "quantity",
+                            "medicine_cost",
+                            "expiry",
+                        ]],
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+
+                    st.write("QpiAI problem-creation response")
+                    st.json(result)
+
+                    st.info(
+                        "No transfer has been selected or approved yet. "
+                        "Problem creation is not the same as solving it. "
+                        "Do not use this response as a transfer recommendation."
+                    )
+                else:
+                    st.error(
+                        f"QpiAI returned HTTP {response.status_code}."
+                    )
+                    st.code(response.text[:1500])
+
+        except requests.RequestException as exc:
+            st.error(
+                f"Could not contact QpiAI: {type(exc).__name__}"
+            )
+        except Exception as exc:
+            st.error(
+                f"Could not build or submit the model: {type(exc).__name__}"
+            )
