@@ -267,12 +267,36 @@ elif page == "Match & transfer":
              "adds the medicine to its inventory."
           )
         else:
-          st.warning(
-            f"No compatible surplus is currently available for "
-            f"'{row['Medicine']}'. The medicine may be stocked, but no "
-            "eligible donor matches the request's hospital, storage, "
-            "expiry and minimum-stock requirements."
-          )
+                    matches = find_matches(row, st.session_state.stock)
+
+        if matches.empty:
+            stock_data = normalize_stock(st.session_state.stock)
+            medicine_name = str(row["Medicine"]).strip().casefold()
+
+            medicine_exists = stock_data["Medicine"].str.strip().str.casefold().eq(
+                medicine_name
+            ).any()
+
+            if not medicine_exists:
+                st.error(
+                    f"Medicine '{row['Medicine']}' is currently not listed in "
+                    "any hospital's stock. No donor is available in the registered network."
+                )
+                st.info(
+                    "You can keep this request open and check again when a hospital "
+                    "adds the medicine to its inventory."
+                )
+            else:
+                st.warning(
+                    f"No compatible surplus is currently available for "
+                    f"'{row['Medicine']}'. The medicine may be stocked, but no "
+                    "eligible donor matches the request's hospital, storage, "
+                    "expiry and minimum-stock requirements."
+                )
+        else:
+            st.markdown("#### Compatible donor hospitals")
+          
+          
         else:
             st.markdown("#### Compatible donor hospitals")
             st.dataframe(matches[["Hospital","Batch ID","Stock","Minimum Stock","Surplus","Suggested Qty","Expiry Date","Days to Expiry","Storage","Location","Unit Price (₹)","Estimated Medicine Cost (₹)"]], use_container_width=True, hide_index=True)
