@@ -195,33 +195,12 @@ if page == "Network dashboard":
     st.info("Core rule: only stock above the donor hospital's minimum reserve is considered transferable. Expiry and storage compatibility are checked before a match is suggested.")
 
 elif page == "Hospital stock":
-    st.subheader("Hospital stock registry")
-    st.write("Each record represents a medicine batch at one hospital. Surplus = current stock − minimum stock.")
-    with st.form("add_stock", clear_on_submit=True):
-        a,b,c = st.columns(3)
-        hospital = a.selectbox("Hospital", hospital_options)
-        medicine = b.text_input("Medicine name", placeholder="e.g. Paracetamol 500 mg")
-        batch = c.text_input("Batch ID", placeholder="e.g. HOSP-PAR-10")
-        d,e,f = st.columns(3)
-        qty = d.number_input("Current stock", min_value=0, step=1)
-        minimum = e.number_input("Minimum stock reserve", min_value=0, step=1)
-        expiry = f.date_input("Expiry date", value=TODAY+timedelta(days=180))
-        g,h,i = st.columns(3)
-        storage = g.selectbox("Storage requirement", STORAGE)
-        unit = h.text_input("Unit", value="units")
-        price = i.number_input("Unit transfer price (₹)", min_value=0.0, step=1.0)
-        location = st.text_input("Hospital area / location", placeholder="e.g. North Bengaluru")
-        add = st.form_submit_button("Add stock record", type="primary")
-        if add:
-            if not medicine.strip() or not batch.strip() or not location.strip():
-                st.error("Enter medicine name, batch ID and location.")
-            elif batch.strip().casefold() in stock["Batch ID"].str.casefold().values:
-                st.error("Batch ID already exists. Use a unique batch ID.")
-            else:
-                new = pd.DataFrame([{"Hospital":hospital,"Medicine":medicine.strip(),"Batch ID":batch.strip(),"Stock":int(qty),"Minimum Stock":int(minimum),"Expiry Date":expiry,"Storage":storage,"Unit":unit.strip() or "units","Unit Price (₹)":float(price),"Location":location.strip()}])
-                st.session_state.stock = pd.concat([normalize_stock(st.session_state.stock),new], ignore_index=True)
-                st.success("Stock record added.")
-                st.rerun()
+     st.subheader("Hospital stock registry")
+     st.write(
+        "View and edit imported hospital inventory. "
+        "Upload a CSV from Data & exports to add or replace stock records."
+     )
+    
     st.markdown("#### Current hospital records (editable)")
     edited = st.data_editor(normalize_stock(st.session_state.stock), num_rows="dynamic", use_container_width=True, hide_index=True,
        column_config={
