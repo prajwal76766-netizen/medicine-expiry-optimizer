@@ -249,7 +249,7 @@ elif page == "Match & transfer":
         st.caption(f"Target delivery window for this demo: within {rule['max_hours']} hours. This is a planning target, not a guaranteed delivery.")
         matches = find_matches(row, st.session_state.stock)
         if matches.empty:
-            stock_data = normalize_stock(st.session_state.stock)
+             stock_data = normalize_stock(st.session_state.stock)
 
              medicine_name = str(row["Medicine"]).strip().casefold()
 
