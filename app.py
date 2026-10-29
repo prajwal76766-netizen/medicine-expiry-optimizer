@@ -201,7 +201,7 @@ elif page == "Hospital stock":
         "Upload a CSV from Data & exports to add or replace stock records."
      )
     
-    st.markdown("#### Current hospital records (editable)")
+    st.markdown("#### Current hospital records (editable)
     edited = st.data_editor(normalize_stock(st.session_state.stock), num_rows="dynamic", use_container_width=True, hide_index=True,
        column_config={
     "Hospital": st.column_config.SelectboxColumn(
