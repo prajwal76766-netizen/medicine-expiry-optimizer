@@ -514,7 +514,7 @@ if st.button("Build and submit allocation model to QpiAI", type="primary"):
                     "max_evaluations": 1000,
                 }
 
-                response = requests.post(
+                response = http_requests.post(
                     f"{QPIAI_BASE_URL}/problems/create",
                     headers={
                         "X-Secret-Token": token,
@@ -563,7 +563,7 @@ if st.button("Build and submit allocation model to QpiAI", type="primary"):
                     )
                     st.code(response.text[:1500])
 
-        except requests.RequestException as exc:
+        except http_requests.RequestException as exc:
             st.error(
                 f"Could not contact QpiAI: {type(exc).__name__}"
             )
