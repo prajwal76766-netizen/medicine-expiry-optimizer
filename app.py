@@ -4,6 +4,7 @@ from datetime import date, timedelta
 import streamlit as st
 import requests
 import requests as http_requests
+import os
 
 def get_qpiai_headers():
     token = str(st.secrets.get("QPIAI_OPT_TOKEN", "")).strip()
@@ -55,12 +56,23 @@ def sample_requests():
         {"Request ID":"REQ-1002","Requesting Hospital":"Lakeside Hospital","Medicine":"Insulin 100 IU/ml","Quantity Needed":25,"Urgency":"Emergency","Required By":TODAY,"Storage Required":"Refrigerated","Status":"Open","Matched Hospital":"","Agreed Unit Price (₹)":0.0,"Transport Fee (₹)":0.0,"Payment Status":"Not started","Delivery Status":"Not arranged"},
     ])
 
+
+
 if "stock" not in st.session_state:
-    st.session_state.stock = sample_stock()
+    csv_path = "bengaluru_hospital_stock_demo.csv"
+
+    if os.path.exists(csv_path):
+        st.session_state.stock = pd.read_csv(
+            csv_path,
+            encoding="utf-8-sig"
+        )
+    else:
+        st.session_state.stock = sample_stock()
+
 if "requests" not in st.session_state:
     st.session_state.requests = sample_requests()
-if "payments" not in st.session_state:
-    st.session_state.payments = []
+
+
 
 def money(value):
     return f"₹{float(value):,.2f}"
