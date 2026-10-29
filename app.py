@@ -1,6 +1,19 @@
 import streamlit as st
 import pandas as pd
 from datetime import date, timedelta
+import streamlit as st
+import requests
+
+def get_qpiai_headers():
+    token = st.secrets.get("QPIAI_OPT_TOKEN")
+
+    if not token:
+        return None
+
+    return {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
 
 st.set_page_config(page_title="MedicineLink | Hospital Exchange", page_icon="🏥", layout="wide")
 
