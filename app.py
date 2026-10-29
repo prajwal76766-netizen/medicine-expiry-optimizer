@@ -368,7 +368,7 @@ if st.button("Test QpiAI Connection"):
     else:
         try:
             response = http_requests.get(
-                "https://opt-server.qpiai.tech/api",
+                "https://opt-server.qpiai.tech/api/auth",
                 headers={
                     "Authorization": f"Bearer {token}"
                 },
