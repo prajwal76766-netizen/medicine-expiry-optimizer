@@ -249,25 +249,25 @@ elif page == "Match & transfer":
         st.caption(f"Target delivery window for this demo: within {rule['max_hours']} hours. This is a planning target, not a guaranteed delivery.")
         matches = find_matches(row, st.session_state.stock)
         if matches.empty:
-        stock_data = normalize_stock(st.session_state.stock)
+            stock_data = normalize_stock(st.session_state.stock)
 
-        medicine_name = str(row["Medicine"]).strip().casefold()
+             medicine_name = str(row["Medicine"]).strip().casefold()
 
-        medicine_exists = stock_data["Medicine"].str.strip().str.casefold().eq(
-        medicine_name
-        ).any()
+             medicine_exists = stock_data["Medicine"].str.strip().str.casefold().eq(
+             medicine_name
+             ).any()
 
         if not medicine_exists:
-         st.error(
-            f"Medicine '{row['Medicine']}' is currently not listed in "
-            "any hospital's stock. No donor is available in the registered network."
-        )
-        st.info(
-            "You can keep this request open and check again when a hospital "
-            "adds the medicine to its inventory."
-        )
+          st.error(
+             f"Medicine '{row['Medicine']}' is currently not listed in "
+             "any hospital's stock. No donor is available in the registered network."
+          )
+          st.info(
+             "You can keep this request open and check again when a hospital "
+             "adds the medicine to its inventory."
+          )
         else:
-        st.warning(
+          st.warning(
             f"No compatible surplus is currently available for "
             f"'{row['Medicine']}'. The medicine may be stocked, but no "
             "eligible donor matches the request's hospital, storage, "
