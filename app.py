@@ -410,10 +410,25 @@ elif page == "Data & exports":
 
     if upload is not None:
         try:
-            imported = pd.read_csv(
-                upload,
-                encoding="utf-8-sig"
-            )
+            if upload is not None:
+    try:
+        if upload.size == 0:
+            st.error("The uploaded CSV file is empty. Please select a CSV containing data.")
+        else:
+            imported = pd.read_csv(upload, encoding="utf-8-sig")
+
+            imported.columns = imported.columns.astype(str).str.strip()
+
+            st.write("CSV columns detected:", imported.columns.tolist())
+            st.write("Number of rows detected:", len(imported))
+
+            # Keep the rest of your existing import code here
+
+    except pd.errors.EmptyDataError:
+        st.error("The CSV contains no readable data. Open it and check that it has headers and rows.")
+    except Exception as exc:
+        st.error(f"Could not import CSV: {exc}")
+           
 
             imported.columns = (
                 imported.columns.astype(str).str.strip()
