@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import date, timedelta
 import streamlit as st
 import requests
+import requests as http_requests
 
 def get_qpiai_headers():
     token = st.secrets.get("QPIAI_OPT_TOKEN")
@@ -355,6 +356,7 @@ elif page == "Data & exports":
 
 st.divider()
 st.caption("MedicineLink hackathon prototype • Sample data only • Validate medicine transfer eligibility, cold-chain handling, authorization, pricing and local regulations before any real-world transfer.")
+
 # Temporary QpiAI connection test
 st.subheader("QpiAI API Connection")
 
@@ -365,8 +367,8 @@ if st.button("Test QpiAI Connection"):
         st.error("QpiAI token is missing from Streamlit Secrets.")
     else:
         try:
-            response = requests.get(
-                "https://opt-server.qpiai.tech/api/auth",
+            response = http_requests.get(
+                "https://opt-server.qpiai.tech/api",
                 headers={
                     "Authorization": f"Bearer {token}"
                 },
@@ -374,20 +376,16 @@ if st.button("Test QpiAI Connection"):
             )
 
             if response.status_code == 200:
-                st.success("QpiAI authentication request succeeded!")
+                st.success("QpiAI API responded successfully!")
             elif response.status_code == 401:
-                st.error(
-                    "Authentication failed. Check the token "
-                    "and its expiry date."
-                )
+                st.error("QpiAI rejected the token. Check its validity.")
+            elif response.status_code == 403:
+                st.warning("Authenticated, but access is forbidden.")
             else:
                 st.warning(
                     f"QpiAI returned HTTP {response.status_code}. "
-                    "Check the API documentation or access permissions."
+                    "Authentication or endpoint access may need checking."
                 )
 
-        except requests.RequestException:
-            st.error(
-                "Could not reach QpiAI. Check your internet "
-                "connection and try again."
-            )
+        except http_requests.exceptions.RequestException:
+            st.error("Could not complete the QpiAI API request.")
