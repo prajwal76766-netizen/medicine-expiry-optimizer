@@ -31,7 +31,7 @@ div[data-testid="stMetric"] {border: 1px solid rgba(128,128,128,.25); padding: 1
 """, unsafe_allow_html=True)
 
 TODAY = date.today()
-HOSPITALS = ["City General Hospital", "Northside Medical Centre", "Lakeside Hospital", "Rural Care Hospital"]
+DEFAULT_HOSPITALS = ["City General Hospital", "Northside Medical Centre", "Lakeside Hospital", "Rural Care Hospital"]
 URGENCY_RULES = {
     "Emergency": {"max_hours": 6, "priority": 1},
     "Urgent": {"max_hours": 24, "priority": 2},
@@ -137,6 +137,18 @@ if st.sidebar.button("Reset demo data", use_container_width=True):
     st.rerun()
 
 stock = normalize_stock(st.session_state.stock)
+
+
+
+hospital_options = sorted(
+    set(DEFAULT_HOSPITALS)
+    | {
+        name.strip()
+        for name in stock["Hospital"].dropna().astype(str)
+        if name.strip()
+    }
+)
+
 requests = normalize_requests(st.session_state.requests)
 stock["Surplus"] = stock.apply(surplus_for, axis=1)
 stock["Days to Expiry"] = stock["Expiry Date"].apply(lambda d: (d - TODAY).days if pd.notna(d) else None)
@@ -174,7 +186,7 @@ elif page == "Hospital stock":
     st.write("Each record represents a medicine batch at one hospital. Surplus = current stock − minimum stock.")
     with st.form("add_stock", clear_on_submit=True):
         a,b,c = st.columns(3)
-        hospital = a.selectbox("Hospital", HOSPITALS)
+        hospital = a.selectbox("Hospital", hospital_options)
         medicine = b.text_input("Medicine name", placeholder="e.g. Paracetamol 500 mg")
         batch = c.text_input("Batch ID", placeholder="e.g. HOSP-PAR-10")
         d,e,f = st.columns(3)
@@ -199,7 +211,18 @@ elif page == "Hospital stock":
                 st.rerun()
     st.markdown("#### Current hospital records (editable)")
     edited = st.data_editor(normalize_stock(st.session_state.stock), num_rows="dynamic", use_container_width=True, hide_index=True,
-        column_config={"Hospital":st.column_config.SelectboxColumn(options=HOSPITALS),"Storage":st.column_config.SelectboxColumn(options=STORAGE),"Expiry Date":st.column_config.DateColumn(),"Stock":st.column_config.NumberColumn(min_value=0,step=1),"Minimum Stock":st.column_config.NumberColumn(min_value=0,step=1),"Unit Price (₹)":st.column_config.NumberColumn(min_value=0.0,step=1.0)})
+       column_config={
+    "Hospital": st.column_config.SelectboxColumn(
+        "Hospital",
+        options=hospital_options,
+        required=True
+    ),
+    "Storage": st.column_config.SelectboxColumn(options=STORAGE),
+    "Expiry Date": st.column_config.DateColumn(),
+    "Stock": st.column_config.NumberColumn(min_value=0, step=1),
+    "Minimum Stock": st.column_config.NumberColumn(min_value=0, step=1),
+    "Unit Price (₹)": st.column_config.NumberColumn(min_value=0.0, step=1.0)
+})
     if st.button("Save stock table", type="primary"):
         st.session_state.stock = normalize_stock(edited)
         st.success("Stock updated for this session.")
@@ -211,7 +234,7 @@ elif page == "Request medicine":
     st.write("A hospital requests stock when its current inventory cannot meet demand. The urgency sets the target delivery window.")
     with st.form("new_request", clear_on_submit=True):
         a,b = st.columns(2)
-        req_hospital = a.selectbox("Requesting hospital", HOSPITALS)
+        req_hospital = a.selectbox("Requesting hospital", hospital_options)
         medicine = b.text_input("Medicine required", placeholder="Use the same medicine name as stock records")
         c,d,e = st.columns(3)
         quantity = c.number_input("Quantity required", min_value=1, value=50, step=1)
@@ -378,9 +401,75 @@ elif page == "Payments & delivery":
 elif page == "Data & exports":
     st.subheader("Data & exports")
     st.write("Download current demo records or upload a hospital stock CSV.")
-    upload = st.file_uploader("Import stock CSV", type=["csv"])
+    
+    upload = st.file_uploader(
+        "Import stock CSV",
+        type=["csv"],
+        key="stock_csv_upload"
+    )
+
     if upload is not None:
         try:
+            imported = pd.read_csv(
+                upload,
+                encoding="utf-8-sig"
+            )
+
+            imported.columns = (
+                imported.columns.astype(str).str.strip()
+            )
+
+            required_columns = [
+                "Hospital",
+                "Medicine",
+                "Batch ID",
+                "Stock",
+                "Minimum Stock",
+                "Expiry Date",
+                "Storage",
+                "Unit",
+                "Unit Price (₹)",
+                "Location",
+            ]
+
+            missing = [
+                col for col in required_columns
+                if col not in imported.columns
+            ]
+
+            if missing:
+                st.error(
+                    "Missing columns: " + ", ".join(missing)
+                )
+            else:
+                imported = imported[required_columns].copy()
+
+                imported["Hospital"] = (
+                    imported["Hospital"]
+                    .fillna("")
+                    .astype(str)
+                    .str.strip()
+                )
+
+                if imported["Hospital"].eq("").any():
+                    st.error(
+                        "Some rows have an empty Hospital value. "
+                        "Correct the CSV before importing."
+                    )
+                elif st.button("Confirm stock CSV import"):
+                    st.session_state.stock = normalize_stock(
+                        imported
+                    )
+                    st.success(
+                        f"Imported {len(imported):,} stock records."
+                    )
+                    st.rerun()
+
+        except Exception as exc:
+            st.error(f"Could not import CSV: {exc}")
+
+
+        try:  
             st.session_state.stock = normalize_stock(pd.read_csv(upload))
             st.success("Stock CSV imported.")
             st.rerun()
