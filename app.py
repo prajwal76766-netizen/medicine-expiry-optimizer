@@ -355,3 +355,39 @@ elif page == "Data & exports":
 
 st.divider()
 st.caption("MedicineLink hackathon prototype • Sample data only • Validate medicine transfer eligibility, cold-chain handling, authorization, pricing and local regulations before any real-world transfer.")
+# Temporary QpiAI connection test
+st.subheader("QpiAI API Connection")
+
+if st.button("Test QpiAI Connection"):
+    token = st.secrets.get("QPIAI_OPT_TOKEN", "")
+
+    if not token:
+        st.error("QpiAI token is missing from Streamlit Secrets.")
+    else:
+        try:
+            response = requests.get(
+                "https://opt-server.qpiai.tech/api/auth",
+                headers={
+                    "Authorization": f"Bearer {token}"
+                },
+                timeout=15
+            )
+
+            if response.status_code == 200:
+                st.success("QpiAI authentication request succeeded!")
+            elif response.status_code == 401:
+                st.error(
+                    "Authentication failed. Check the token "
+                    "and its expiry date."
+                )
+            else:
+                st.warning(
+                    f"QpiAI returned HTTP {response.status_code}. "
+                    "Check the API documentation or access permissions."
+                )
+
+        except requests.RequestException:
+            st.error(
+                "Could not reach QpiAI. Check your internet "
+                "connection and try again."
+            )
