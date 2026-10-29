@@ -408,9 +408,8 @@ elif page == "Data & exports":
         key="stock_csv_upload"
     )
 
-    if upload is not None:
-        try:
-            if upload is not None:
+
+   if upload is not None:
         try:
            if upload.size == 0:
                st.error("The uploaded CSV file is empty. Please select a CSV containing data.")
