@@ -408,87 +408,57 @@ elif page == "Data & exports":
         key="stock_csv_upload"
     )
 
-
-   if upload is not None:
+    if upload is not None:
         try:
-           if upload.size == 0:
-               st.error("The uploaded CSV file is empty. Please select a CSV containing data.")
-           else:
-               imported = pd.read_csv(upload, encoding="utf-8-sig")
-
-               imported.columns = imported.columns.astype(str).str.strip()
-
-               st.write("CSV columns detected:", imported.columns.tolist())
-               st.write("Number of rows detected:", len(imported))
-
-            # Keep the rest of your existing import code here
-
-    except pd.errors.EmptyDataError:
-        st.error("The CSV contains no readable data. Open it and check that it has headers and rows.")
-    except Exception as exc:
-        st.error(f"Could not import CSV: {exc}")
-           
-
-            imported.columns = (
-                imported.columns.astype(str).str.strip()
-            )
-
-            required_columns = [
-                "Hospital",
-                "Medicine",
-                "Batch ID",
-                "Stock",
-                "Minimum Stock",
-                "Expiry Date",
-                "Storage",
-                "Unit",
-                "Unit Price (₹)",
-                "Location",
-            ]
-
-            missing = [
-                col for col in required_columns
-                if col not in imported.columns
-            ]
-
-            if missing:
-                st.error(
-                    "Missing columns: " + ", ".join(missing)
-                )
+            if upload.size == 0:
+                st.error("The uploaded CSV file is empty.")
             else:
-                imported = imported[required_columns].copy()
+                imported = pd.read_csv(upload, encoding="utf-8-sig")
+                imported.columns = imported.columns.astype(str).str.strip()
 
-                imported["Hospital"] = (
-                    imported["Hospital"]
-                    .fillna("")
-                    .astype(str)
-                    .str.strip()
-                )
+                required_columns = [
+                    "Hospital", "Medicine", "Batch ID", "Stock",
+                    "Minimum Stock", "Expiry Date", "Storage",
+                    "Unit", "Unit Price (₹)", "Location"
+                ]
 
-                if imported["Hospital"].eq("").any():
-                    st.error(
-                        "Some rows have an empty Hospital value. "
-                        "Correct the CSV before importing."
-                    )
-                elif st.button("Confirm stock CSV import"):
-                    st.session_state.stock = normalize_stock(
-                        imported
-                    )
-                    st.success(
-                        f"Imported {len(imported):,} stock records."
-                    )
-                    st.rerun()
+                missing = [
+                    col for col in required_columns
+                    if col not in imported.columns
+                ]
 
+                if missing:
+                    st.error("Missing columns: " + ", ".join(missing))
+                else:
+                    imported = imported[required_columns].copy()
+                    imported["Hospital"] = (
+                        imported["Hospital"]
+                        .fillna("")
+                        .astype(str)
+                        .str.strip()
+                    )
+
+                    if imported["Hospital"].eq("").any():
+                        st.error(
+                            "Some rows have an empty Hospital value. "
+                            "Correct the CSV before importing."
+                        )
+                    elif st.button("Confirm stock CSV import"):
+                        st.session_state.stock = normalize_stock(imported)
+                        st.success(
+                            f"Imported {len(imported):,} stock records."
+                        )
+                        st.rerun()
+
+        except pd.errors.EmptyDataError:
+            st.error(
+                "The CSV contains no readable data. "
+                "Check that it has column headings and rows."
+            )
         except Exception as exc:
             st.error(f"Could not import CSV: {exc}")
 
-
-        try:  
-            st.session_state.stock = normalize_stock(pd.read_csv(upload))
-            st.success("Stock CSV imported.")
-            st.rerun()
-        except Exception as exc:
-            st.error(f"Could not import CSV: {exc}")
+    
     c1,c2 = st.columns(2)
     with c1:
         st.markdown("#### Hospital stock")
