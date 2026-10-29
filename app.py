@@ -589,8 +589,8 @@ def build_medicine_allocation_qubo(stock_df, requests_df):
 
     return candidates, qubo
 
-
-st.subheader("QpiAI medicine-allocation optimizer")
+if page == "Match & transfer":
+    st.subheader("QpiAI medicine-allocation optimizer")
 st.write(
     "Build a QUBO from current inventory and open requests, "
     "then submit the optimization problem to QpiAI."
@@ -687,3 +687,4 @@ if st.button("Build and submit allocation model to QpiAI", type="primary"):
             st.error(
                 f"Could not build or submit the model: {type(exc).__name__}"
             )
+
