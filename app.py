@@ -393,3 +393,16 @@ if st.button("Test QpiAI Connection"):
 
         except http_requests.exceptions.RequestException:
             st.error("Could not complete the QpiAI API request.")
+st.subheader("Token diagnostic")
+
+try:
+    token = str(st.secrets.get("QPIAI_OPT_TOKEN", "")).strip()
+
+    st.write("Secret found:", bool(token))
+    st.write("Token length:", len(token))
+    st.write(
+        "Contains Bearer prefix:",
+        token.lower().startswith("bearer ")
+    )
+except Exception as e:
+    st.error(f"Could not read Streamlit Secrets: {type(e).__name__}")
