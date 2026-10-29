@@ -411,10 +411,10 @@ elif page == "Data & exports":
     if upload is not None:
         try:
             if upload is not None:
-       try:
-          if upload.size == 0:
+        try:
+           if upload.size == 0:
                st.error("The uploaded CSV file is empty. Please select a CSV containing data.")
-          else:
+           else:
                imported = pd.read_csv(upload, encoding="utf-8-sig")
 
                imported.columns = imported.columns.astype(str).str.strip()
