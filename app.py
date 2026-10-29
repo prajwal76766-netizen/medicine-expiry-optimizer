@@ -293,8 +293,7 @@ elif page == "Match & transfer":
                     "eligible donor matches the request's hospital, storage, "
                     "expiry and minimum-stock requirements."
                 )
-        else:
-            st.markdown("#### Compatible donor hospitals")
+        
           
           
         else:
