@@ -194,32 +194,39 @@ if page == "Network dashboard":
             st.dataframe(low[["Hospital","Medicine","Stock","Minimum Stock","Stock Status"]], use_container_width=True, hide_index=True)
     st.info("Core rule: only stock above the donor hospital's minimum reserve is considered transferable. Expiry and storage compatibility are checked before a match is suggested.")
 elif page == "Hospital stock":
-       st.subheader("Hospital stock registry")
-       st.write(
+    st.subheader("Hospital stock registry")
+    st.write(
         "View and edit imported hospital inventory. "
         "Upload a CSV from Data & exports to add or replace stock records."
-        )
-    
-        st.markdown("#### Current hospital records (editable)")
-        edited = st.data_editor(
-            normalize_stock(st.session_state.stock), num_rows="dynamic", use_container_width=True, hide_index=True,
-            column_config={
+    )
+
+    st.markdown("#### Current hospital records (editable)")
+    edited = st.data_editor(
+        normalize_stock(st.session_state.stock),
+        num_rows="dynamic",
+        use_container_width=True,
+        hide_index=True,
+        column_config={
             "Hospital": st.column_config.SelectboxColumn(
-            "Hospital",
-            options=hospital_options,
-            required=True
-    ),
-    "Storage": st.column_config.SelectboxColumn(options=STORAGE),
-    "Expiry Date": st.column_config.DateColumn(),
-    "Stock": st.column_config.NumberColumn(min_value=0, step=1),
-    "Minimum Stock": st.column_config.NumberColumn(min_value=0, step=1),
-    "Unit Price (₹)": st.column_config.NumberColumn(min_value=0.0, step=1.0)
-})
+                "Hospital",
+                options=hospital_options,
+                required=True,
+            ),
+            "Storage": st.column_config.SelectboxColumn(options=STORAGE),
+            "Expiry Date": st.column_config.DateColumn(),
+            "Stock": st.column_config.NumberColumn(min_value=0, step=1),
+            "Minimum Stock": st.column_config.NumberColumn(min_value=0, step=1),
+            "Unit Price (₹)": st.column_config.NumberColumn(min_value=0.0, step=1.0),
+        },
+    )
     if st.button("Save stock table", type="primary"):
         st.session_state.stock = normalize_stock(edited)
         st.success("Stock updated for this session.")
         st.rerun()
-    st.caption("A real deployment should use a database and verified hospital accounts. Demo edits may be lost when the app restarts.")
+    st.caption(
+        "A real deployment should use a database and verified hospital accounts. "
+        "Demo edits may be lost when the app restarts."
+    )
 
 elif page == "Request medicine":
     st.subheader("Create a medicine request")
