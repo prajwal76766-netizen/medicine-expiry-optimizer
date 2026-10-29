@@ -381,7 +381,7 @@ if st.button("Test QpiAI Connection"):
                 st.error("QpiAI rejected the token. Check its validity.")
             elif response.status_code == 403:
                 st.warning("Authenticated, but access is forbidden.")
-           else:
+            else:
                 st.warning(f"QpiAI returned HTTP {response.status_code}")
                 st.write("Response URL:", response.url)
                 st.write("Server response:")
