@@ -71,7 +71,8 @@ if "stock" not in st.session_state:
 
 if "requests" not in st.session_state:
     st.session_state.requests = sample_requests()
-
+if "payments" not in st.session_state:
+    st.session_state.payments = []
 
 
 def money(value):
